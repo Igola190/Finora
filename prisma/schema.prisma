@@ -1,0 +1,173 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id           String        @id @default(cuid())
+  name         String
+  type         AccountType
+  balance      Float         @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+}
+
+model Category {
+  id           String          @id @default(cuid())
+  name         String
+  type         TransactionType
+  parentId     String?
+  parent       Category?       @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     Category[]      @relation("CategoryHierarchy")
+  transactions Transaction[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model Transaction {
+  id          String           @id @default(cuid())
+  description String
+  amount      Float
+  type        TransactionType
+  date        DateTime
+  notes       String?
+  accountId   String
+  account     Account          @relation(fields: [accountId], references: [id])
+  categoryId  String
+  category    Category         @relation(fields: [categoryId], references: [id])
+  tags        TransactionTag[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Tag {
+  id           String           @id @default(cuid())
+  name         String           @unique
+  color        String           @default("#6366f1")
+  transactions TransactionTag[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model TransactionTag {
+  id            String      @id @default(cuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  tagId         String
+  tag           Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([transactionId, tagId])
+}
+
+model MonthClosure {
+  id           String   @id @default(cuid())
+  month        String   @unique
+  totalIncome  Float
+  totalExpense Float
+  balance      Float
+  notes        String?
+  closedAt     DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Subscription {
+  id           String                @id @default(cuid())
+  name         String
+  totalAmount  Float
+  billingDay   Int
+  billingCycle BillingCycle          @default(MONTHLY)
+  isShared     Boolean               @default(false)
+  isActive     Boolean               @default(true)
+  members      SubscriptionMember[]
+  payments     SubscriptionPayment[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+}
+
+model SubscriptionMember {
+  id             String          @id @default(cuid())
+  name           String
+  share          Float
+  isOwner        Boolean         @default(false)
+  subscriptionId String
+  subscription   Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  payments       MemberPayment[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model MemberPayment {
+  id        String             @id @default(cuid())
+  amount    Float
+  month     String
+  paidAt    DateTime           @default(now())
+  memberId  String
+  member    SubscriptionMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt DateTime           @default(now())
+}
+
+model SubscriptionPayment {
+  id             String       @id @default(cuid())
+  amount         Float
+  paidAt         DateTime     @default(now())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+}
+
+model FinancialGoal {
+  id            String   @id @default(cuid())
+  name          String
+  targetAmount  Float
+  currentAmount Float    @default(0)
+  deadline      DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Bill {
+  id          String    @id @default(cuid())
+  description String
+  amount      Float
+  type        BillType
+  dueDate     DateTime
+  isPaid      Boolean   @default(false)
+  paidAt      DateTime?
+  isRecurring Boolean   @default(false)
+  notes       String?
+  categoryId  String?
+  accountId   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CREDIT_CARD
+  CASH
+  INVESTMENT
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+
+enum BillType {
+  PAYABLE
+  RECEIVABLE
+}
