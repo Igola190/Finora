@@ -116,6 +116,13 @@ const api = {
       ipcRenderer.invoke("subscriptionAlerts:getAlerts", days),
   },
 
+  // Salary Distribution
+  salaryDistribution: {
+    get: () => ipcRenderer.invoke("salaryDistribution:get"),
+    save: (data: any) => ipcRenderer.invoke("salaryDistribution:save", data),
+    delete: () => ipcRenderer.invoke("salaryDistribution:delete"),
+  },
+
   // Dashboard
   dashboard: {
     getSummary: () => ipcRenderer.invoke("dashboard:getSummary"),

@@ -221,6 +221,17 @@ function registerIpcHandlers() {
     db.getSubscriptionAlerts(days),
   );
 
+  // Salary Distribution
+  ipcMain.handle("salaryDistribution:get", () =>
+    db.getSalaryDistribution(),
+  );
+  ipcMain.handle("salaryDistribution:save", (_, data) =>
+    db.saveSalaryDistribution(data),
+  );
+  ipcMain.handle("salaryDistribution:delete", () =>
+    db.deleteSalaryDistribution(),
+  );
+
   // Dashboard
   ipcMain.handle("dashboard:getSummary", () => db.getDashboardSummary());
 }

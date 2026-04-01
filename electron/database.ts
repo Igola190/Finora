@@ -1,37 +1,14 @@
 import { app } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import type { AccountType, TransactionType } from '@prisma/client'
+import Database from 'better-sqlite3'
+import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3'
+import { PrismaClient, AccountType, TransactionType } from '../generated/prisma/client'
 
 // Re-export types for external use
 export type { AccountType, TransactionType }
 
-// Configure Prisma paths BEFORE importing PrismaClient
-function configurePrisma() {
-  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
-  
-  if (!isDev) {
-    // Set the path to the query engine binary for production
-    const resourcesPath = process.resourcesPath || path.join(app.getAppPath(), '..')
-    const queryEnginePath = path.join(resourcesPath, 'node_modules', '.prisma', 'client', 'query_engine-windows.dll.node')
-    process.env.PRISMA_QUERY_ENGINE_LIBRARY = queryEnginePath
-    
-    // Also set schema path
-    const schemaPath = path.join(resourcesPath, 'node_modules', '.prisma', 'client', 'schema.prisma')
-    process.env.PRISMA_SCHEMA_PATH = schemaPath
-    
-    console.log('Prisma Query Engine Path:', queryEnginePath)
-    console.log('Prisma Schema Path:', schemaPath)
-  }
-  
-  return isDev
-}
-
-const isDev = configurePrisma()
-
-// Now import Prisma Client after environment is configured
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { PrismaClient } = require('@prisma/client')
+const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
 // SQL to create tables (from migration)
 const CREATE_TABLES_SQL = `
@@ -180,10 +157,34 @@ CREATE TABLE IF NOT EXISTS "Bill" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );
+
+-- CreateTable
+CREATE TABLE IF NOT EXISTS "SalaryDistribution" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "salary" REAL NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE IF NOT EXISTS "SalaryDistributionRule" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "percentage" REAL NOT NULL,
+    "isOrigin" BOOLEAN NOT NULL DEFAULT false,
+    "distributionId" TEXT NOT NULL,
+    "accountId" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    FOREIGN KEY ("distributionId") REFERENCES "SalaryDistribution" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY ("accountId") REFERENCES "Account" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX IF NOT EXISTS "SalaryDistributionRule_distributionId_accountId_key" ON "SalaryDistributionRule"("distributionId", "accountId");
 `
 
 export class DatabaseService {
-  private prisma: InstanceType<typeof PrismaClient>
+  private prisma: PrismaClient
   private dbPath: string
 
   constructor() {
@@ -193,16 +194,11 @@ export class DatabaseService {
       ? path.resolve(app.getAppPath(), 'prisma', 'dev.db')
       : path.join(app.getPath('userData'), 'finora.db')
 
-    const dbUrl = `file:${this.dbPath.replace(/\\/g, '/')}`
-    console.log('Database URL:', dbUrl)
-    
-    this.prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: dbUrl
-        }
-      }
-    })
+    console.log('Database path:', this.dbPath)
+
+    const sqlite = new Database(this.dbPath)
+    const adapter = new PrismaBetterSQLite3(sqlite)
+    this.prisma = new PrismaClient({ adapter })
   }
 
   async initialize() {
@@ -865,5 +861,77 @@ export class DatabaseService {
     }
 
     return alerts.sort((a, b) => a.daysUntilBilling - b.daysUntilBilling)
+  }
+
+  // ==================== SALARY DISTRIBUTION ====================
+  async getSalaryDistribution() {
+    return this.prisma.salaryDistribution.findFirst({
+      include: {
+        rules: {
+          include: { account: true },
+          orderBy: [{ isOrigin: 'desc' }, { createdAt: 'asc' }]
+        }
+      }
+    })
+  }
+
+  async saveSalaryDistribution(data: {
+    salary: number
+    rules: { accountId: string; percentage: number; isOrigin: boolean }[]
+  }) {
+    const existing = await this.prisma.salaryDistribution.findFirst()
+
+    if (existing) {
+      // Delete old rules and update
+      await this.prisma.salaryDistributionRule.deleteMany({
+        where: { distributionId: existing.id }
+      })
+      return this.prisma.salaryDistribution.update({
+        where: { id: existing.id },
+        data: {
+          salary: data.salary,
+          rules: {
+            create: data.rules.map(rule => ({
+              accountId: rule.accountId,
+              percentage: rule.percentage,
+              isOrigin: rule.isOrigin
+            }))
+          }
+        },
+        include: {
+          rules: {
+            include: { account: true },
+            orderBy: [{ isOrigin: 'desc' }, { createdAt: 'asc' }]
+          }
+        }
+      })
+    } else {
+      return this.prisma.salaryDistribution.create({
+        data: {
+          salary: data.salary,
+          rules: {
+            create: data.rules.map(rule => ({
+              accountId: rule.accountId,
+              percentage: rule.percentage,
+              isOrigin: rule.isOrigin
+            }))
+          }
+        },
+        include: {
+          rules: {
+            include: { account: true },
+            orderBy: [{ isOrigin: 'desc' }, { createdAt: 'asc' }]
+          }
+        }
+      })
+    }
+  }
+
+  async deleteSalaryDistribution() {
+    const existing = await this.prisma.salaryDistribution.findFirst()
+    if (existing) {
+      return this.prisma.salaryDistribution.delete({ where: { id: existing.id } })
+    }
+    return null
   }
 }
