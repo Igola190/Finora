@@ -42,8 +42,8 @@ export function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Carregando...</div>
+      <div className="flex h-96 items-center justify-center text-muted-foreground">
+        Carregando...
       </div>
     );
   }
@@ -211,7 +211,7 @@ export function DashboardPage() {
                   <div>
                     <p className="font-medium">{transaction.description}</p>
                     <p className="text-sm text-muted-foreground">
-                      {transaction.category?.name} •{" "}
+                      {transaction.category?.name || "Sem categoria"} •{" "}
                       {formatDate(transaction.date)}
                     </p>
                   </div>
@@ -243,7 +243,9 @@ export function DashboardPage() {
               <div className="space-y-3">
                 {data.upcomingBills.map((bill) => {
                   const dueDate = new Date(bill.dueDate);
-                  const today = new Date(new Date().toDateString());
+                  dueDate.setHours(0, 0, 0, 0);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
                   const diffDays = Math.ceil(
                     (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
                   );

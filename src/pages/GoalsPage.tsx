@@ -161,7 +161,7 @@ export function GoalsPage() {
       {/* Goals Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {goals.map((goal) => {
-          const progress = (goal.currentAmount / goal.targetAmount) * 100;
+          const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
           const status = getGoalStatus(goal);
           const remaining = goal.targetAmount - goal.currentAmount;
 

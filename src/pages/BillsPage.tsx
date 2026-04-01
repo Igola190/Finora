@@ -153,7 +153,11 @@ export function BillsPage() {
 
   function isOverdue(bill: Bill): boolean {
     if (bill.isPaid) return false;
-    return new Date(bill.dueDate) < new Date(new Date().toDateString());
+    const due = new Date(bill.dueDate);
+    const today = new Date();
+    due.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return due < today;
   }
 
   const filteredBills = bills.filter((bill) => {
