@@ -19,7 +19,10 @@ export default defineConfig({
               formats: ["cjs"],
             },
             rollupOptions: {
-              external: ["@prisma/client", "better-sqlite3", "@prisma/adapter-better-sqlite3"],
+              external: (id) => {
+                return ["better-sqlite3", "@prisma/adapter-better-sqlite3"].includes(id) ||
+                  id.startsWith("@prisma/client")
+              },
               output: {
                 format: "cjs",
               },

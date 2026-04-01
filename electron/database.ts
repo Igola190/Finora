@@ -1,9 +1,8 @@
 import { app } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import Database from 'better-sqlite3'
-import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3'
-import { PrismaClient, AccountType, TransactionType } from '../generated/prisma/client'
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { PrismaClient, AccountType, TransactionType } from '../generated/prisma/client/client'
 
 // Re-export types for external use
 export type { AccountType, TransactionType }
@@ -196,8 +195,7 @@ export class DatabaseService {
 
     console.log('Database path:', this.dbPath)
 
-    const sqlite = new Database(this.dbPath)
-    const adapter = new PrismaBetterSQLite3(sqlite)
+    const adapter = new PrismaBetterSqlite3({ url: `file:${this.dbPath}` })
     this.prisma = new PrismaClient({ adapter })
   }
 
