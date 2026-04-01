@@ -1,21 +1,21 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "windows"]
+  provider = "prisma-client"
+  output   = "../generated/prisma/client"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 model Account {
-  id           String        @id @default(cuid())
-  name         String
-  type         AccountType
-  balance      Float         @default(0)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  transactions Transaction[]
+  id                String                   @id @default(cuid())
+  name              String
+  type              AccountType
+  balance           Float                    @default(0)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  transactions      Transaction[]
+  distributionRules SalaryDistributionRule[]
 }
 
 model Category {
@@ -170,4 +170,28 @@ enum BillingCycle {
 enum BillType {
   PAYABLE
   RECEIVABLE
+}
+
+// ==================== SALARY DISTRIBUTION ====================
+
+model SalaryDistribution {
+  id        String                   @id @default(cuid())
+  salary    Float
+  rules     SalaryDistributionRule[]
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+}
+
+model SalaryDistributionRule {
+  id             String             @id @default(cuid())
+  percentage     Float
+  isOrigin       Boolean            @default(false)
+  distributionId String
+  distribution   SalaryDistribution @relation(fields: [distributionId], references: [id], onDelete: Cascade)
+  accountId      String
+  account        Account            @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([distributionId, accountId])
 }
