@@ -7,6 +7,7 @@ import { CategoriesPage } from "./pages/CategoriesPage";
 import { ClosuresPage } from "./pages/ClosuresPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { GoalsPage } from "./pages/GoalsPage";
+import { SalaryDistributionPage } from "./pages/SalaryDistributionPage";
 import { SubscriptionsPage } from "./pages/SubscriptionsPage";
 import { TransactionsPage } from "./pages/TransactionsPage";
 
@@ -24,6 +25,7 @@ export function App() {
             <Route path="subscriptions" element={<SubscriptionsPage />} />
             <Route path="goals" element={<GoalsPage />} />
             <Route path="bills" element={<BillsPage />} />
+            <Route path="salary-distribution" element={<SalaryDistributionPage />} />
           </Route>
         </Routes>
       </HashRouter>

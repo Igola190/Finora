@@ -277,3 +277,32 @@ export interface SubscriptionAlert {
   daysUntilBilling: number;
   nextBillingDate: Date;
 }
+
+// Salary Distribution
+export interface SalaryDistributionRule {
+  id: string;
+  percentage: number;
+  isOrigin: boolean;
+  distributionId: string;
+  accountId: string;
+  account?: Account;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalaryDistribution {
+  id: string;
+  salary: number;
+  rules?: SalaryDistributionRule[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SaveSalaryDistributionDto {
+  salary: number;
+  rules: {
+    accountId: string;
+    percentage: number;
+    isOrigin: boolean;
+  }[];
+}

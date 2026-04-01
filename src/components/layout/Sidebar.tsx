@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import {
   ArrowRightLeft,
+  Banknote,
   Calendar,
   ChevronDown,
   CreditCard,
@@ -42,6 +43,7 @@ const navEntries: NavEntry[] = [
       { to: "/transactions", icon: ArrowRightLeft, label: "Transações" },
       { to: "/categories", icon: Tags, label: "Categorias" },
       { to: "/bills", icon: Receipt, label: "Pagar/Receber" },
+      { to: "/salary-distribution", icon: Banknote, label: "Distribuição Salarial" },
     ],
   },
   {
